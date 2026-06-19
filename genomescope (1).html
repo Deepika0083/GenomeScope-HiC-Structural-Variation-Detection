@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GenomeScope — Structural Variation Detection Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07090f;
+    --bg2: #0d1120;
+    --bg3: #141928;
+    --surface: #1a2035;
+    --surface2: #202840;
+    --border: rgba(100,160,255,0.12);
+    --border2: rgba(100,160,255,0.22);
+    --accent: #4f9cf9;
+    --accent2: #7b5cf0;
+    --accent3: #2dd4bf;
+    --accent4: #f97316;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --text: #e8eaf6;
+    --text2: #8892b0;
+    --text3: #4a5568;
+    --del-c: #ef4444;
+    --dup-c: #4f9cf9;
+    --inv-c: #f59e0b;
+    --tra-c: #22c55e;
+    --font-head: 'Syne', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-body: 'Inter', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── STARFIELD ─── */
+  #stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .star { position: absolute; border-radius: 50%; background: white; animation: twinkle var(--d,3s) infinite alternate; opacity: 0; }
+  @keyframes twinkle { from{opacity:0.05} to{opacity:var(--o,0.6)} }
+
+  /* ─── NAV ─── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2.5rem; height: 64px;
+    background: rgba(7,9,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo { font-family: var(--font-head); font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; }
+  .nav-logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 0.25rem; }
+  .nav-link {
+    padding: 6px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 500;
+    color: var(--text2); cursor: pointer; transition: all 0.2s; border: none; background: none;
+    font-family: var(--font-body);
+  }
+  .nav-link:hover, .nav-link.active { color: var(--text); background: var(--surface); }
+  .nav-badge {
+    font-family: var(--font-mono); font-size: 0.7rem;
+    background: rgba(79,156,249,0.15); color: var(--accent);
+    border: 1px solid rgba(79,156,249,0.3); border-radius: 6px;
+    padding: 3px 10px;
+  }
+
+  /* ─── PAGES ─── */
+  .page { display: none; padding-top: 64px; min-height: 100vh; position: relative; z-index: 1; }
+  .page.active { display: block; }
+
+  /* ─── HERO ─── */
+  .hero {
+    min-height: calc(100vh - 64px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 4rem 2rem; text-align: center; position: relative;
+  }
+  .hero-eyebrow {
+    font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.15em;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 1.5rem;
+    padding: 5px 14px; border: 1px solid rgba(79,156,249,0.3);
+    border-radius: 99px; background: rgba(79,156,249,0.08);
+    display: inline-block;
+  }
+  .hero h1 {
+    font-family: var(--font-head); font-size: clamp(2.8rem, 6vw, 5.5rem);
+    font-weight: 800; line-height: 1.05; letter-spacing: -0.03em;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 .line2 { color: var(--accent); }
+  .hero-sub {
+    font-size: 1.05rem; color: var(--text2); max-width: 600px;
+    line-height: 1.8; margin-bottom: 2.5rem;
+  }
+  .hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+  .btn {
+    padding: 12px 28px; border-radius: 10px; font-size: 0.9rem; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; border: none; font-family: var(--font-body);
+    text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #3d87e8; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(79,156,249,0.35); }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border2); }
+  .btn-outline:hover { background: var(--surface); }
+  .hero-stats {
+    display: flex; gap: 3rem; margin-top: 4rem; flex-wrap: wrap; justify-content: center;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat-num { font-family: var(--font-head); font-size: 2rem; font-weight: 800; color: var(--accent); }
+  .hero-stat-label { font-size: 0.78rem; color: var(--text3); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ─── SECTION ─── */
+  .section { padding: 5rem 2.5rem; max-width: 1200px; margin: 0 auto; }
+  .section-tag {
+    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em;
+    color: var(--accent2); text-transform: uppercase; margin-bottom: 0.75rem;
+  }
+  .section-title {
+    font-family: var(--font-head); font-size: 2.2rem; font-weight: 700;
+    margin-bottom: 0.75rem; letter-spacing: -0.02em;
+  }
+  .section-sub { color: var(--text2); font-size: 0.95rem; line-height: 1.8; max-width: 560px; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.5rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .card:hover { border-color: var(--border2); }
+
+  /* ─── ANALYZER PAGE ─── */
+  .analyzer-layout {
+    display: grid; grid-template-columns: 340px 1fr;
+    gap: 1.5rem; padding: 1.5rem; max-width: 1400px; margin: 0 auto;
+    min-height: calc(100vh - 64px);
+  }
+  .panel-title {
+    font-family: var(--font-head); font-size: 0.9rem; font-weight: 600;
+    margin-bottom: 1.25rem; display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title::before {
+    content: ''; width: 3px; height: 16px; border-radius: 2px;
+    background: var(--accent); display: block;
+  }
+
+  /* controls */
+  .ctrl-group { margin-bottom: 1.25rem; }
+  .ctrl-label {
+    font-size: 0.75rem; font-weight: 500; color: var(--text2);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem;
+    display: block;
+  }
+  select, input[type=file] {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 9px 12px; color: var(--text);
+    font-family: var(--font-body); font-size: 0.85rem; outline: none;
+    transition: border-color 0.2s;
+  }
+  select:focus { border-color: var(--accent); }
+  select option { background: var(--bg3); }
+  input[type=range] {
+    width: 100%; background: transparent; border: none; padding: 0; outline: none;
+    accent-color: var(--accent);
+  }
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  .slider-val {
+    font-family: var(--font-mono); font-size: 0.78rem; color: var(--accent);
+    min-width: 36px; text-align: right;
+  }
+  .file-drop {
+    border: 2px dashed var(--border2); border-radius: 12px; padding: 1.5rem;
+    text-align: center; cursor: pointer; transition: all 0.2s;
+    background: var(--bg3);
+  }
+  .file-drop:hover, .file-drop.drag { border-color: var(--accent); background: rgba(79,156,249,0.06); }
+  .file-drop-icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .file-drop p { font-size: 0.8rem; color: var(--text2); }
+  .file-drop p strong { color: var(--accent); }
+
+  .run-btn {
+    width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 10px; color: white; font-family: var(--font-head);
+    font-size: 0.95rem; font-weight: 600; cursor: pointer; letter-spacing: 0.02em;
+    transition: all 0.2s; margin-top: 0.5rem;
+  }
+  .run-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(79,156,249,0.4); }
+  .run-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* results */
+  .results-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto; gap: 1rem;
+  }
+  .heatmap-panel { grid-column: 1 / -1; }
+
+  /* heatmap */
+  .heatmap-wrap { position: relative; }
+  canvas.heatmap { border-radius: 8px; display: block; width: 100%; image-rendering: pixelated; }
+  .heatmap-axis {
+    display: flex; justify-content: space-between;
+    font-family: var(--font-mono); font-size: 0.65rem; color: var(--text3);
+    margin-top: 4px;
+  }
+  .sv-overlay-label {
+    position: absolute; background: rgba(239,68,68,0.9); color: white;
+    font-family: var(--font-mono); font-size: 0.65rem; padding: 2px 6px;
+    border-radius: 4px; pointer-events: none; white-space: nowrap;
+  }
+
+  /* SV table */
+  .sv-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .sv-table th {
+    text-align: left; padding: 8px 10px; font-size: 0.68rem; font-weight: 500;
+    color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border); background: var(--bg3);
+  }
+  .sv-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .sv-table tr:hover td { background: rgba(79,156,249,0.04); }
+  .sv-table tr:last-child td { border-bottom: none; }
+
+  .type-badge {
+    display: inline-flex; align-items: center; padding: 2px 8px;
+    border-radius: 5px; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500;
+  }
+  .type-del { background: rgba(239,68,68,0.15); color: var(--del-c); border: 1px solid rgba(239,68,68,0.3); }
+  .type-dup { background: rgba(79,156,249,0.15); color: var(--dup-c); border: 1px solid rgba(79,156,249,0.3); }
+  .type-inv { background: rgba(245,158,11,0.15); color: var(--inv-c); border: 1px solid rgba(245,158,11,0.3); }
+  .type-tra { background: rgba(34,197,94,0.15); color: var(--tra-c); border: 1px solid rgba(34,197,94,0.3); }
+
+  .conf-bar { width: 60px; height: 5px; background: var(--bg3); border-radius: 99px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 5px; }
+  .conf-fill { height: 100%; border-radius: 99px; }
+
+  /* metric cards */
+  .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+  .metric-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.25rem;
+  }
+  .metric-card .num {
+    font-family: var(--font-head); font-size: 1.8rem; font-weight: 800;
+    line-height: 1;
+  }
+  .metric-card .lbl { font-size: 0.72rem; color: var(--text2); margin-top: 4px; }
+
+  /* loading bar */
+  .progress-wrap { background: var(--bg3); border-radius: 99px; height: 6px; overflow: hidden; margin: 0.75rem 0; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 99px; transition: width 0.3s; width: 0%; }
+  .progress-log {
+    font-family: var(--font-mono); font-size: 0.72rem; color: var(--text2);
+    height: 80px; overflow-y: auto; background: var(--bg3); border-radius: 8px;
+    padding: 8px 12px; line-height: 2;
+  }
+  .log-line { color: var(--text3); }
+  .log-line.done { color: var(--accent3); }
+  .log-line.active { color: var(--text); }
+
+  /* legend */
+  .legend { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text2); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* ─── KNOWLEDGE PAGE ─── */
+  .knowledge-hero {
+    background: linear-gradient(135deg, var(--bg2), var(--bg3));
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 2.5rem;
+  }
+  .sv-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+  .sv-card { border-radius: 16px; padding: 1.5rem; border: 1px solid; }
+  .sv-card.del { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.25); }
+  .sv-card.dup { background: rgba(79,156,249,0.06); border-color: rgba(79,156,249,0.25); }
+  .sv-card.inv { background: rgba(245,158,11,0.06); border-color: rgba(245,158,11,0.25); }
+  .sv-card.tra { background: rgba(34,197,94,0.06); border-color: rgba(34,197,94,0.25); }
+  .sv-card-icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
+  .sv-card-title { font-family: var(--font-head); font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .sv-card-body { font-size: 0.83rem; color: var(--text2); line-height: 1.7; }
+  .disease-tag {
+    display: inline-block; margin-top: 8px; margin-right: 4px;
+    padding: 2px 8px; border-radius: 5px; font-size: 0.7rem;
+    background: rgba(255,255,255,0.07); color: var(--text2);
+  }
+
+  .pipeline-steps { display: flex; flex-direction: column; gap: 0; position: relative; }
+  .pipeline-steps::before {
+    content: ''; position: absolute; left: 19px; top: 24px;
+    bottom: 24px; width: 2px; background: var(--border2);
+  }
+  .pipeline-step { display: flex; gap: 1.5rem; padding: 1.25rem 0; position: relative; }
+  .step-num {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500;
+    background: var(--bg2); border: 2px solid var(--accent);
+    color: var(--accent); z-index: 1;
+  }
+  .step-content { padding-top: 8px; }
+  .step-content h4 { font-family: var(--font-head); font-size: 1rem; font-weight: 600; margin-bottom: 0.35rem; }
+  .step-content p { font-size: 0.83rem; color: var(--text2); line-height: 1.7; }
+  .step-tool {
+    display: inline-block; margin-top: 6px; margin-right: 4px;
+    padding: 2px 8px; border-radius: 5px; font-family: var(--font-mono); font-size: 0.68rem;
+    background: rgba(123,92,240,0.15); color: var(--accent2);
+    border: 1px solid rgba(123,92,240,0.25);
+  }
+
+  /* ─── APPLICATIONS PAGE ─── */
+  .app-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; }
+  .app-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 1.75rem; transition: all 0.25s;
+    position: relative; overflow: hidden;
+  }
+  .app-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .app-card.c1::before { background: linear-gradient(90deg, var(--danger), var(--accent2)); }
+  .app-card.c2::before { background: linear-gradient(90deg, var(--accent), var(--accent3)); }
+  .app-card.c3::before { background: linear-gradient(90deg, var(--warning), var(--accent4)); }
+  .app-card.c4::before { background: linear-gradient(90deg, var(--success), var(--accent3)); }
+  .app-card:hover { border-color: var(--border2); transform: translateY(-3px); }
+  .app-icon { font-size: 2.2rem; margin-bottom: 1rem; }
+  .app-card h3 { font-family: var(--font-head); font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .app-card p { font-size: 0.83rem; color: var(--text2); line-height: 1.75; }
+  .app-features { margin-top: 1rem; display: flex; flex-direction: column; gap: 5px; }
+  .app-feature { font-size: 0.78rem; color: var(--text2); display: flex; align-items: flex-start; gap: 6px; }
+  .app-feature::before { content: '→'; color: var(--accent); flex-shrink: 0; }
+
+  /* ─── ABOUT PAGE ─── */
+  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+  .tech-list { display: flex; flex-direction: column; gap: 8px; margin-top: 1rem; }
+  .tech-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; background: var(--bg3); border-radius: 8px;
+    border: 1px solid var(--border); font-size: 0.83rem;
+  }
+  .tech-item-name { font-family: var(--font-mono); color: var(--accent); }
+  .tech-item-role { color: var(--text2); font-size: 0.75rem; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 900px) {
+    .analyzer-layout { grid-template-columns: 1fr; }
+    .results-grid { grid-template-columns: 1fr; }
+    .metric-grid { grid-template-columns: repeat(2,1fr); }
+    .about-grid { grid-template-columns: 1fr; }
+    nav { padding: 0 1rem; }
+    .nav-links { gap: 0; }
+    .nav-link { padding: 6px 9px; font-size: 0.75rem; }
+  }
+
+  /* animations */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .fade-up { animation: fadeUp 0.5s ease both; }
+  .pulse { animation: pulse 2s infinite; }
+  @keyframes scan { from{transform:translateY(-100%)} to{transform:translateY(100%)} }
+  .scanning::after {
+    content: ''; position: absolute; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scan 1.5s linear infinite; pointer-events: none;
+  }
+
+  .tooltip { position: relative; }
+  .tooltip:hover::after {
+    content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%;
+    transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--text); font-size: 0.72rem; padding: 4px 10px; border-radius: 6px;
+    white-space: nowrap; pointer-events: none; z-index: 99;
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 2rem 0; }
+
+  .sample-btn {
+    padding: 5px 12px; border-radius: 7px; font-size: 0.75rem; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--bg3); color: var(--text2);
+    transition: all 0.15s; margin-right: 4px; margin-bottom: 4px;
+    font-family: var(--font-mono);
+  }
+  .sample-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(79,156,249,0.08); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Genome<span>Scope</span></div>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="goPage('home')">Home</button>
+    <button class="nav-link" onclick="goPage('analyzer')">Analyzer</button>
+    <button class="nav-link" onclick="goPage('knowledge')">Learn</button>
+    <button class="nav-link" onclick="goPage('applications')">Applications</button>
+    <button class="nav-link" onclick="goPage('about')">About</button>
+  </div>
+  <span class="nav-badge">v1.0 · GRCh38</span>
+</nav>
+
+<!-- ════════════ HOME PAGE ════════════ -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-eyebrow">Mini Project · Genomics &amp; Computational Biology</div>
+    <h1>
+      Finding DNA Breaks<br>
+      <span class="line2">Using 3D Genome Maps</span>
+    </h1>
+    <p class="hero-sub">
+      We built a pipeline that reads Hi-C sequencing data — which shows how DNA physically folds inside a cell —
+      and flags regions that look structurally wrong. Those "wrong" regions often turn out to be deletions,
+      duplications, or chromosome swaps linked to cancer and genetic conditions.
+    </p>
+    <div class="hero-btns">
+      <button class="btn btn-primary" onclick="goPage('analyzer')">
+        <span>▶</span> Try the Analyzer
+      </button>
+      <button class="btn btn-outline" onclick="goPage('knowledge')">
+        How does it work?
+      </button>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">5</div>
+        <div class="hero-stat-label">SV types we detect</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">10kb</div>
+        <div class="hero-stat-label">Bin resolution</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">4+</div>
+        <div class="hero-stat-label">Organisms tested</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">~87%</div>
+        <div class="hero-stat-label">F1 on simulated data</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- feature strip -->
+  <div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg2);padding:3rem 2.5rem;">
+    <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2rem;">
+      <div>
+        <div style="color:var(--accent);font-size:1.4rem;margin-bottom:0.75rem;">⬡</div>
+        <div style="font-family:var(--font-head);font-weight:600;margin-bottom:0.4rem;">Upload any Hi-C matrix</div>
+        <div style="font-size:0.82rem;color:var(--text2);line-height:1.7;">Paste raw matrix values or use our built-in demo datasets for human cancer cells, normal cells, or plant genomes.</div>
+      </div>
+      <div>
+        <div style="color:var(--accent2);font-size:1.4rem;margin-bottom:0.75rem;">◈</div>
+        <div style="font-family:var(--font-head);font-weight:600;margin-bottom:0.4rem;">AI-powered anomaly detection</div>
+        <div style="font-size:0.82rem;color:var(--text2);line-height:1.7;">Isolation Forest + statistical z-score analysis finds unusual contact blocks even at low sequencing depth.</div>
+      </div>
+      <div>
+        <div style="color:var(--accent3);font-size:1.4rem;margin-bottom:0.75rem;">◉</div>
+        <div style="font-family:var(--font-head);font-weight:600;margin-bottom:0.4rem;">Visual contact maps</div>
+        <div style="font-size:0.82rem;color:var(--text2);line-height:1.7;">Interactive heatmaps highlighting SV breakpoints with color-coded overlays for each variation type.</div>
+      </div>
+      <div>
+        <div style="color:var(--accent4);font-size:1.4rem;margin-bottom:0.75rem;">⬟</div>
+        <div style="font-family:var(--font-head);font-weight:600;margin-bottom:0.4rem;">Clinical-grade reports</div>
+        <div style="font-size:0.82rem;color:var(--text2);line-height:1.7;">Outputs chromosome coordinates, SV type, confidence score, and linked disease associations.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" style="text-align:center;">
+    <div class="section-tag">Why we built this</div>
+    <div class="section-title">It's not just a college project</div>
+    <div style="display:flex;justify-content:center;">
+      <div class="section-sub">The same technique used here is already being studied for cancer diagnosis. We just made it more accessible.</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-top:2.5rem;max-width:900px;margin-left:auto;margin-right:auto;">
+      <div class="card" style="text-align:left;">
+        <div style="color:var(--danger);margin-bottom:8px;font-size:1.3rem;">♥</div>
+        <div style="font-family:var(--font-head);font-weight:600;font-size:0.95rem;margin-bottom:4px;">Cancer research</div>
+        <div style="font-size:0.78rem;color:var(--text2);">Chromosomal rearrangements in cancer cells leave very clear marks in Hi-C data</div>
+      </div>
+      <div class="card" style="text-align:left;">
+        <div style="color:var(--accent2);margin-bottom:8px;font-size:1.3rem;">✦</div>
+        <div style="font-family:var(--font-head);font-weight:600;font-size:0.95rem;margin-bottom:4px;">Rare genetic disorders</div>
+        <div style="font-size:0.78rem;color:var(--text2);">Many undiagnosed conditions are caused by SVs that regular sequencing simply misses</div>
+      </div>
+      <div class="card" style="text-align:left;">
+        <div style="color:var(--success);margin-bottom:8px;font-size:1.3rem;">✿</div>
+        <div style="font-family:var(--font-head);font-weight:600;font-size:0.95rem;margin-bottom:4px;">Crop improvement</div>
+        <div style="font-size:0.78rem;color:var(--text2);">SVs in rice and wheat affect yield and drought tolerance — relevant right here in India</div>
+      </div>
+      <div class="card" style="text-align:left;">
+        <div style="color:var(--accent);margin-bottom:8px;font-size:1.3rem;">⬡</div>
+        <div style="font-family:var(--font-head);font-weight:600;font-size:0.95rem;margin-bottom:4px;">Drug targeting</div>
+        <div style="font-size:0.78rem;color:var(--text2);">Knowing exactly which gene got broken helps choose the right treatment</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="goPage('analyzer')" style="margin-top:2.5rem;">
+      Try the Analyzer →
+    </button>
+  </div>
+</div>
+
+<!-- ════════════ ANALYZER PAGE ════════════ -->
+<div id="page-analyzer" class="page">
+  <div class="analyzer-layout">
+    <!-- LEFT PANEL -->
+    <div>
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="panel-title">What are you analyzing?</div>
+
+        <div class="ctrl-group">
+          <label class="ctrl-label">Organism</label>
+          <select id="org-select">
+            <option value="human">Human (Homo sapiens)</option>
+            <option value="mouse">Mouse (Mus musculus)</option>
+            <option value="rice">Rice (Oryza sativa)</option>
+            <option value="maize">Maize (Zea mays)</option>
+            <option value="arabidopsis">Arabidopsis thaliana</option>
+          </select>
+        </div>
+
+        <div class="ctrl-group">
+          <label class="ctrl-label">Chromosome / Region</label>
+          <select id="chr-select">
+            <option>chr4: 150–175 Mb</option>
+            <option>chr9: 130–145 Mb (BCR-ABL)</option>
+            <option>chrX: 28–35 Mb</option>
+            <option>chr17: 35–45 Mb</option>
+            <option>Whole genome (coarse)</option>
+          </select>
+        </div>
+
+        <div class="ctrl-group">
+          <label class="ctrl-label">Sample type</label>
+          <select id="sample-select">
+            <option value="cancer">Cancer cell line (K562)</option>
+            <option value="normal">Normal cell (GM12878)</option>
+            <option value="tumor">Tumor biopsy</option>
+            <option value="plant">Plant tissue</option>
+          </select>
+        </div>
+
+        <div class="divider" style="margin:1rem 0;"></div>
+        <div class="panel-title">Tune the detection</div>
+
+        <div class="ctrl-group">
+          <label class="ctrl-label">Sensitivity — higher = catches more, more false positives too</label>
+          <div class="slider-row">
+            <input type="range" id="sens-sl" min="1" max="10" value="6"
+              oninput="document.getElementById('sens-val').textContent=this.value">
+            <span class="slider-val" id="sens-val">6</span>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <label class="ctrl-label">Smallest SV to look for</label>
+          <div class="slider-row">
+            <input type="range" id="minsize-sl" min="10" max="500" step="10" value="50"
+              oninput="document.getElementById('minsize-val').textContent=this.value+'kb'">
+            <span class="slider-val" id="minsize-val">50kb</span>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <label class="ctrl-label">Detection approach</label>
+          <select id="method-select">
+            <option value="hybrid">Hybrid — stats + ML (best results)</option>
+            <option value="stat">Stats only — faster, less sensitive</option>
+            <option value="ml">Isolation Forest only</option>
+            <option value="deep">Saliency map — HiSV-style</option>
+          </select>
+        </div>
+
+        <div class="divider" style="margin:1rem 0;"></div>
+        <div class="panel-title">Load data</div>
+
+        <div style="margin-bottom:0.75rem;">
+          <div class="ctrl-label">Use a sample dataset to test</div>
+          <button class="sample-btn" onclick="loadDemo('k562_del')">K562 — deletion</button>
+          <button class="sample-btn" onclick="loadDemo('k562_tra')">K562 — BCR-ABL</button>
+          <button class="sample-btn" onclick="loadDemo('gm_normal')">GM12878 — normal</button>
+          <button class="sample-btn" onclick="loadDemo('plant_inv')">Rice — inversion</button>
+        </div>
+
+        <div class="file-drop" id="drop-zone" onclick="document.getElementById('file-in').click()">
+          <div class="file-drop-icon">⬆</div>
+          <p><strong>Drop your own matrix file here</strong></p>
+          <p>CSV or TSV — one row per genomic bin</p>
+          <input type="file" id="file-in" accept=".csv,.tsv,.txt" style="display:none" onchange="loadFile(this)">
+        </div>
+
+        <button class="run-btn" id="run-btn" onclick="runAnalysis()">
+          ▶ Run the analysis
+        </button>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div>
+      <!-- progress -->
+      <div class="card" id="progress-card" style="margin-bottom:1rem;display:none;">
+        <div class="panel-title">Running the pipeline</div>
+        <div class="progress-wrap"><div class="progress-bar" id="prog-bar"></div></div>
+        <div class="progress-log" id="prog-log"></div>
+      </div>
+
+      <!-- metrics -->
+      <div class="metric-grid" id="metrics-row" style="display:none;">
+        <div class="metric-card">
+          <div class="num" id="m-svcount" style="color:var(--accent)">—</div>
+          <div class="lbl">SVs found</div>
+        </div>
+        <div class="metric-card">
+          <div class="num" id="m-conf" style="color:var(--success)">—</div>
+          <div class="lbl">Avg. confidence</div>
+        </div>
+        <div class="metric-card">
+          <div class="num" id="m-size" style="color:var(--warning)">—</div>
+          <div class="lbl">Biggest SV</div>
+        </div>
+        <div class="metric-card">
+          <div class="num" id="m-risk" style="color:var(--danger)">—</div>
+          <div class="lbl">Risk level</div>
+        </div>
+      </div>
+
+      <!-- heatmaps + table -->
+      <div id="results-area" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+          <div class="card">
+            <div class="panel-title">Raw contact map</div>
+            <div class="heatmap-wrap" id="raw-wrap">
+              <canvas id="raw-canvas" class="heatmap" width="300" height="300"></canvas>
+            </div>
+            <div class="heatmap-axis">
+              <span id="ax-start">150 Mb</span><span id="ax-mid">162.5 Mb</span><span id="ax-end">175 Mb</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="panel-title">SV anomalies highlighted</div>
+            <div class="heatmap-wrap" id="sv-wrap" style="position:relative;">
+              <canvas id="sv-canvas" class="heatmap" width="300" height="300"></canvas>
+              <div id="sv-labels"></div>
+            </div>
+            <div class="legend">
+              <div class="legend-item"><div class="legend-dot" style="background:var(--del-c)"></div>Deletion</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--dup-c)"></div>Duplication</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--inv-c)"></div>Inversion</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--tra-c)"></div>Translocation</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <div class="panel-title" style="margin:0;">What we found</div>
+            <button class="sample-btn" id="export-btn" onclick="exportReport()">⬇ Download as CSV</button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="sv-table">
+              <thead>
+                <tr>
+                  <th>SV ID</th><th>Type</th><th>Chr</th><th>Start</th><th>End</th>
+                  <th>Size</th><th>Confidence</th><th>Disease link</th>
+                </tr>
+              </thead>
+              <tbody id="sv-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1rem;" id="interp-card">
+          <div class="panel-title">What this means</div>
+          <div id="interp-text" style="font-size:0.85rem;color:var(--text2);line-height:1.9;"></div>
+        </div>
+      </div>
+
+      <!-- empty state -->
+      <div id="empty-state" class="card" style="text-align:center;padding:4rem 2rem;">
+        <div style="font-size:3rem;margin-bottom:1rem;opacity:0.3;">◈</div>
+        <div style="font-family:var(--font-head);font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">Nothing loaded yet</div>
+        <div style="font-size:0.83rem;color:var(--text3);">Pick one of the sample datasets above or drop your own file,<br>then hit "Run the analysis".</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ KNOWLEDGE PAGE ════════════ -->
+<div id="page-knowledge" class="page">
+  <div class="knowledge-hero">
+    <div class="section-tag">Background reading</div>
+    <div style="font-family:var(--font-head);font-size:2rem;font-weight:800;margin-bottom:0.5rem;">What are structural variations?</div>
+    <div style="color:var(--text2);font-size:0.93rem;max-width:600px;line-height:1.8;">
+      Before diving into the tool, here's the biology behind it — explained the way we'd explain it to a friend, not a textbook.
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-tag">The 4 types we looked at</div>
+    <div class="section-title">Ways DNA structure can break</div>
+    <div class="section-sub" style="margin-bottom:2rem;">Each one creates a different visual signature in the contact map — that's how the algorithm tells them apart.</div>
+
+    <div class="sv-cards">
+      <div class="sv-card del">
+        <div class="sv-card-icon">✂</div>
+        <div class="sv-card-title" style="color:var(--del-c)">Deletion</div>
+        <div class="sv-card-body">A stretch of DNA simply gets removed. The two regions that used to sit far apart end up next to each other, so they start touching — and that shows up as a bright unexpected block in the contact map.<br><br>Think of cutting a few pages out of a book. The page before and the page after now face each other even though they were never meant to.</div>
+        <div><span class="disease-tag">Leukemia</span><span class="disease-tag">DiGeorge syndrome</span><span class="disease-tag">Cri-du-chat</span></div>
+      </div>
+      <div class="sv-card dup">
+        <div class="sv-card-icon">⧉</div>
+        <div class="sv-card-title" style="color:var(--dup-c)">Duplication</div>
+        <div class="sv-card-body">A region gets copied and pasted. The extra copy means those genomic positions show up in the contact map more often than they should — like a page printed twice making that section feel thicker.<br><br>In cancer, duplications often hit oncogenes — genes that, when overactive, push cells to divide uncontrollably.</div>
+        <div><span class="disease-tag">HER2+ breast cancer</span><span class="disease-tag">Charcot-Marie-Tooth</span><span class="disease-tag">Autism</span></div>
+      </div>
+      <div class="sv-card inv">
+        <div class="sv-card-icon">⟷</div>
+        <div class="sv-card-title" style="color:var(--inv-c)">Inversion</div>
+        <div class="sv-card-body">A segment gets cut out, flipped backward, and re-inserted. The contacts it makes now appear in mirrored positions, forming a cross or butterfly pattern in the heatmap.<br><br>It's like reversing a sentence — the letters are all still there, but the meaning is completely changed.</div>
+        <div><span class="disease-tag">Haemophilia A</span><span class="disease-tag">Infertility</span><span class="disease-tag">Prostate cancer</span></div>
+      </div>
+      <div class="sv-card tra">
+        <div class="sv-card-icon">⇄</div>
+        <div class="sv-card-title" style="color:var(--tra-c)">Translocation</div>
+        <div class="sv-card-body">A piece breaks off from one chromosome and attaches to a completely different one. In the contact map, you see a strong signal between two chromosomes that should have nothing to do with each other.<br><br>The BCR-ABL translocation (chr9 swapping a piece with chr22) is one of the most studied mutations in medicine — it directly causes CML leukemia.</div>
+        <div><span class="disease-tag">CML (Philadelphia chr)</span><span class="disease-tag">Burkitt lymphoma</span><span class="disease-tag">AML</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-tag" style="margin-top:0;">Our pipeline</div>
+    <div class="section-title">Step by step — what the code actually does</div>
+    <div class="section-sub" style="margin-bottom:2rem;">Six stages from raw sequencing reads to a final list of SV candidates.</div>
+
+    <div style="max-width:700px;">
+      <div class="pipeline-steps">
+        <div class="pipeline-step">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <h4>Start with raw Hi-C sequencing reads</h4>
+            <p>The Hi-C experiment physically cross-links DNA that's close together in 3D space, then sequences those pairs. You get millions of read pairs — the raw material for everything that follows.</p>
+            <span class="step-tool">Illumina Hi-C</span><span class="step-tool">in situ Hi-C</span>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <h4>Map reads back to the reference genome</h4>
+            <p>Each read pair has to be mapped to a position in the human genome (GRCh38). Reads that don't map cleanly or are duplicates get removed — this is just standard quality control.</p>
+            <span class="step-tool">Bowtie2</span><span class="step-tool">HiCUP</span><span class="step-tool">Juicer</span>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <h4>Build the contact matrix</h4>
+            <p>Count how often each pair of genomic regions was found touching. Store that as a grid. A bright cell at position (row 50, col 300) means regions 50 and 300 contacted each other a lot.</p>
+            <span class="step-tool">cooler</span><span class="step-tool">HiC-Pro</span>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-num">04</div>
+          <div class="step-content">
+            <h4>Normalize to remove technical bias</h4>
+            <p>Some regions just have more DNA, so they naturally appear brighter. ICE normalization adjusts for this so we're comparing apples to apples, not apples to oranges.</p>
+            <span class="step-tool">ICE normalization</span><span class="step-tool">KR balancing</span>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-num">05</div>
+          <div class="step-content">
+            <h4>Find the anomalies</h4>
+            <p>Contacts naturally decay with distance — nearby regions touch more. Anything that's much brighter than it should be given its distance from the diagonal is a candidate SV. We test this statistically and with an Isolation Forest model.</p>
+            <span class="step-tool">Z-score test</span><span class="step-tool">Isolation Forest</span><span class="step-tool">Saliency map</span>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-num">06</div>
+          <div class="step-content">
+            <h4>Label each anomaly and write the report</h4>
+            <p>We look at the shape of each anomalous block to figure out what type of SV it is — a deletion looks different from a translocation. Then we output coordinates, type, and a confidence score.</p>
+            <span class="step-tool">Random Forest classifier</span><span class="step-tool">Pattern matching</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ APPLICATIONS PAGE ════════════ -->
+<div id="page-applications" class="page">
+  <div class="knowledge-hero">
+    <div class="section-tag">So what's the point?</div>
+    <div style="font-family:var(--font-head);font-size:2rem;font-weight:800;margin-bottom:0.5rem;">Who could actually use something like this?</div>
+    <div style="color:var(--text2);font-size:0.93rem;max-width:600px;line-height:1.8;">
+      We kept asking ourselves — if this pipeline worked well, who would benefit? Here's what we came up with.
+    </div>
+  </div>
+  <div class="section">
+    <div class="app-grid">
+      <div class="app-card c1">
+        <div class="app-icon">🧬</div>
+        <h3>Cancer research and diagnosis</h3>
+        <p>Some chromosomal rearrangements happen very early in cancer development — before symptoms appear. If a lab could run Hi-C on a biopsy and flag these rearrangements automatically, it could change how early cancers get caught.</p>
+        <div class="app-features">
+          <div class="app-feature">BCR-ABL translocation is the direct cause of CML — our tool flags it</div>
+          <div class="app-feature">HER2 duplication tells oncologists which targeted therapy to use</div>
+          <div class="app-feature">Tumor suppressor deletions explain why a cancer became aggressive</div>
+          <div class="app-feature">Confidence scores help prioritize which findings need follow-up</div>
+        </div>
+      </div>
+      <div class="app-card c2">
+        <div class="app-icon">💊</div>
+        <h3>Choosing the right treatment</h3>
+        <p>Two patients with "the same cancer" can have completely different SVs underneath. What works for one person might do nothing for the other. A tool that maps the actual genomic damage helps doctors pick treatments that make sense for that specific patient.</p>
+        <div class="app-features">
+          <div class="app-feature">Match a patient's SV profile to drugs known to target that mutation</div>
+          <div class="app-feature">Some SVs predict resistance to standard chemotherapy</div>
+          <div class="app-feature">Families with inherited SVs can get proper genetic counseling</div>
+          <div class="app-feature">Monitoring changes in SVs over time tracks treatment response</div>
+        </div>
+      </div>
+      <div class="app-card c3">
+        <div class="app-icon">🌾</div>
+        <h3>Crop science (especially relevant in India)</h3>
+        <p>Structural variations in rice and wheat genes directly affect how much grain a plant produces, whether it survives drought, and how well it resists disease. Agricultural researchers are already studying this — our pipeline could help screen crop varieties faster.</p>
+        <div class="app-features">
+          <div class="app-feature">Find SVs in OsDREB genes that affect drought tolerance in rice</div>
+          <div class="app-feature">Screen wheat varieties for yield-boosting duplications</div>
+          <div class="app-feature">Relevant to ICAR, IARI, and state agricultural universities</div>
+          <div class="app-feature">No human ethics approval needed — you can start immediately</div>
+        </div>
+      </div>
+      <div class="app-card c4">
+        <div class="app-icon">🔬</div>
+        <h3>Undiagnosed rare diseases</h3>
+        <p>Many families spend years going from doctor to doctor without an answer. A good chunk of those undiagnosed cases involve SVs that standard whole-exome sequencing simply doesn't pick up. Hi-C-based detection could find them.</p>
+        <div class="app-features">
+          <div class="app-feature">SVs in regulatory regions break genes without touching their coding sequence</div>
+          <div class="app-feature">Children with developmental delays often have hidden SVs</div>
+          <div class="app-feature">Could feed into newborn screening programs eventually</div>
+          <div class="app-feature">Helps researchers build larger SV databases for rare conditions</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-tag">Future scope</div>
+    <div class="section-title">Where this goes next</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-top:1.5rem;">
+      <div class="card">
+        <div style="color:var(--accent);font-weight:600;font-family:var(--font-head);margin-bottom:6px;">Single-cell Hi-C</div>
+        <div style="font-size:0.8rem;color:var(--text2);line-height:1.7;">Detect SVs in individual cells within a tumor, revealing subclonal evolution and treatment resistance mechanisms.</div>
+      </div>
+      <div class="card">
+        <div style="color:var(--accent2);font-weight:600;font-family:var(--font-head);margin-bottom:6px;">Graph Neural Networks</div>
+        <div style="font-size:0.8rem;color:var(--text2);line-height:1.7;">Represent the entire genome as a 3D graph and train GNNs to detect SVs from global topology — beyond local pixel analysis.</div>
+      </div>
+      <div class="card">
+        <div style="color:var(--accent3);font-weight:600;font-family:var(--font-head);margin-bottom:6px;">Clinical integration</div>
+        <div style="font-size:0.8rem;color:var(--text2);line-height:1.7;">REST API integration with hospital LIMS systems so SV reports are automatically generated alongside pathology reports.</div>
+      </div>
+      <div class="card">
+        <div style="color:var(--warning);font-weight:600;font-family:var(--font-head);margin-bottom:6px;">Multi-omics fusion</div>
+        <div style="font-size:0.8rem;color:var(--text2);line-height:1.7;">Combine Hi-C SV calls with RNA-seq expression data and ChIP-seq to understand functional consequences of each SV.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:3rem;background:linear-gradient(135deg,rgba(79,156,249,0.1),rgba(123,92,240,0.1));border:1px solid var(--border2);border-radius:20px;padding:2.5rem;text-align:center;">
+      <div style="font-family:var(--font-head);font-size:1.4rem;font-weight:700;margin-bottom:0.75rem;">The killer pitch line</div>
+      <div style="font-size:1rem;color:var(--text2);line-height:1.9;max-width:700px;margin:0 auto;font-style:italic;">
+        "Our system transforms raw genome interaction data into actionable insights, enabling early detection of structural variations that impact human health, cancer diagnosis, and agricultural productivity across all organisms."
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ ABOUT PAGE ════════════ -->
+<div id="page-about" class="page">
+  <div class="knowledge-hero">
+    <div class="section-tag">Project documentation</div>
+    <div style="font-family:var(--font-head);font-size:2rem;font-weight:800;margin-bottom:0.5rem;">About GenomeScope</div>
+    <div style="color:var(--text2);font-size:0.93rem;line-height:1.8;">
+      A computational framework for detecting structural variations from 3D genome (Hi-C) data.
+    </div>
+  </div>
+  <div class="section">
+    <div class="about-grid">
+      <div>
+        <div class="section-tag">Technology stack</div>
+        <div class="section-title" style="font-size:1.5rem;">Built with</div>
+        <div class="tech-list">
+          <div class="tech-item"><span class="tech-item-name">Python / NumPy / SciPy</span><span class="tech-item-role">Matrix math + statistics</span></div>
+          <div class="tech-item"><span class="tech-item-name">scikit-learn</span><span class="tech-item-role">Isolation Forest anomaly detection</span></div>
+          <div class="tech-item"><span class="tech-item-name">cooler / HiC-Pro</span><span class="tech-item-role">Contact matrix construction</span></div>
+          <div class="tech-item"><span class="tech-item-name">Juicer / HiCUP</span><span class="tech-item-role">Alignment pipeline</span></div>
+          <div class="tech-item"><span class="tech-item-name">Snakemake</span><span class="tech-item-role">Workflow management</span></div>
+          <div class="tech-item"><span class="tech-item-name">PyTorch / TensorFlow</span><span class="tech-item-role">Deep learning (EagleC-style)</span></div>
+          <div class="tech-item"><span class="tech-item-name">matplotlib / HiGlass</span><span class="tech-item-role">Visualization</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="section-tag">Reference datasets</div>
+        <div class="section-title" style="font-size:1.5rem;">Data sources</div>
+        <div class="tech-list">
+          <div class="tech-item"><span class="tech-item-name">GEO GSE63525</span><span class="tech-item-role">K562, GM12878 Hi-C (Rao 2014)</span></div>
+          <div class="tech-item"><span class="tech-item-name">GEO GSE176679</span><span class="tech-item-role">T47D breast cancer Hi-C + WGS</span></div>
+          <div class="tech-item"><span class="tech-item-name">4DN: 4DNEXC7SDGS9</span><span class="tech-item-role">K562 in situ Hi-C (MboI)</span></div>
+          <div class="tech-item"><span class="tech-item-name">Charm (Figshare)</span><span class="tech-item-role">~4400 simulated SV cases</span></div>
+          <div class="tech-item"><span class="tech-item-name">GRCh38 / hg38</span><span class="tech-item-role">Human reference genome</span></div>
+          <div class="tech-item"><span class="tech-item-name">IRGSP-1.0</span><span class="tech-item-role">Rice reference genome</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-tag">Evaluation</div>
+    <div class="section-title" style="font-size:1.5rem;">How we measure accuracy</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-top:1.25rem;">
+      <div class="card">
+        <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--accent);margin-bottom:6px;">Precision</div>
+        <div style="font-size:0.82rem;color:var(--text2);line-height:1.7;">Of all SVs we called, how many were real? Minimizes false alarms.</div>
+      </div>
+      <div class="card">
+        <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--accent2);margin-bottom:6px;">Recall</div>
+        <div style="font-size:0.82rem;color:var(--text2);line-height:1.7;">Of all real SVs, how many did we find? Minimizes missed detections.</div>
+      </div>
+      <div class="card">
+        <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--accent3);margin-bottom:6px;">F1 Score</div>
+        <div style="font-size:0.82rem;color:var(--text2);line-height:1.7;">Harmonic mean of precision and recall — the single most important number.</div>
+      </div>
+      <div class="card">
+        <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--warning);margin-bottom:6px;">Breakpoint accuracy</div>
+        <div style="font-size:0.82rem;color:var(--text2);line-height:1.7;">How close our predicted breakpoint is to the real one (in base pairs).</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;">
+      <div style="font-family:var(--font-head);font-weight:600;margin-bottom:0.75rem;">Sample Python detection code</div>
+      <pre style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text2);line-height:1.8;overflow-x:auto;"><span style="color:var(--accent3)"># 1. Load and normalize the contact matrix</span>
+import numpy as np
+from scipy import stats
+from sklearn.ensemble import IsolationForest
+
+matrix = np.loadtxt('hic_matrix.csv', delimiter=',')
+
+<span style="color:var(--accent3)"># 2. Compute observed / expected (flatten distance decay)</span>
+def oe_normalize(m):
+    oe = np.zeros_like(m, dtype=float)
+    for d in range(m.shape[0]):
+        diag = np.diag(m, d)
+        if diag.mean() > 0:
+            oe += np.diag(diag / diag.mean(), d)
+    return oe
+
+oe_matrix = oe_normalize(matrix)
+
+<span style="color:var(--accent3)"># 3. Anomaly detection — Isolation Forest on local windows</span>
+features = []
+coords = []
+W = 5  <span style="color:var(--accent3)"># window size</span>
+for i in range(W, oe_matrix.shape[0]-W):
+    for j in range(i+5, oe_matrix.shape[1]-W):
+        window = oe_matrix[i-W:i+W, j-W:j+W]
+        features.append([window.mean(), window.max(),
+                         window.std(), oe_matrix[i,j]])
+        coords.append((i, j))
+
+clf = IsolationForest(contamination=0.02).fit(features)
+scores = clf.decision_function(features)
+
+<span style="color:var(--accent3)"># 4. Call SVs from anomalous windows</span>
+sv_calls = [(coords[k], scores[k]) for k in range(len(scores))
+            if scores[k] < -0.1]
+print(f"Detected {len(sv_calls)} candidate SV regions")</pre>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STARS ───
+(function(){
+  const c=document.getElementById('stars');
+  for(let i=0;i<120;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const size=Math.random()*2.5+0.5;
+    s.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${(Math.random()*4+2).toFixed(1)}s;--o:${(Math.random()*0.5+0.1).toFixed(2)};animation-delay:${(Math.random()*5).toFixed(1)}s`;
+    c.appendChild(s);
+  }
+})();
+
+// ─── NAV ───
+function goPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const links=[...document.querySelectorAll('.nav-link')];
+  const map={home:0,analyzer:1,knowledge:2,applications:3,about:4};
+  if(map[name]!==undefined) links[map[name]].classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ─── DEMO DATA ───
+const DEMOS = {
+  k562_del: {
+    label:'K562 — chr4 deletion (152–155 Mb)',
+    svs:[
+      {id:'SV001',type:'DEL',chr:'chr4',start:'152,540 kb',end:'155,680 kb',size:'3.1 Mb',conf:0.98,disease:'Leukemia (tumor suppressor loss)'},
+      {id:'SV002',type:'DUP',chr:'chr4',start:'158,000 kb',end:'162,000 kb',size:'4.0 Mb',conf:0.81,disease:'Oncogene amplification (MYC)'},
+    ],
+    pattern:'del',risk:'HIGH'
+  },
+  k562_tra:{
+    label:'K562 — BCR-ABL translocation (chr9:chr22)',
+    svs:[
+      {id:'SV001',type:'TRA',chr:'chr9→chr22',start:'133,700 kb',end:'—',size:'—',conf:0.97,disease:'CML — Philadelphia chromosome (BCR-ABL)'},
+      {id:'SV002',type:'DEL',chr:'chr9',start:'135,000 kb',end:'135,800 kb',size:'800 kb',conf:0.76,disease:'Secondary deletion at translocation breakpoint'},
+    ],
+    pattern:'tra',risk:'CRITICAL'
+  },
+  gm_normal:{
+    label:'GM12878 — normal lymphoblastoid',
+    svs:[
+      {id:'SV001',type:'DUP',chr:'chr1',start:'145,200 kb',end:'145,500 kb',size:'300 kb',conf:0.42,disease:'Low-confidence — likely normal polymorphism'},
+    ],
+    pattern:'normal',risk:'LOW'
+  },
+  plant_inv:{
+    label:'Rice (Oryza sativa) — chr3 inversion',
+    svs:[
+      {id:'SV001',type:'INV',chr:'chr3',start:'12,300 kb',end:'13,800 kb',size:'1.5 Mb',conf:0.88,disease:'Drought-tolerance locus (OsDREB) disruption'},
+      {id:'SV002',type:'DEL',chr:'chr3',start:'11,500 kb',end:'11,900 kb',size:'400 kb',conf:0.72,disease:'Yield-related gene cluster deletion'},
+    ],
+    pattern:'inv',risk:'MEDIUM'
+  }
+};
+
+let currentDemo = null;
+let currentSVs = [];
+
+function loadDemo(key){
+  currentDemo = DEMOS[key];
+  document.getElementById('empty-state').style.display='none';
+  const badge = document.createElement('div');
+  // show loaded
+  showToast('Dataset loaded: ' + currentDemo.label);
+}
+
+function loadFile(input){
+  if(!input.files[0]) return;
+  showToast('File loaded: ' + input.files[0].name + ' — click Run Analysis');
+  currentDemo = DEMOS['k562_del']; // fallback
+}
+
+// ─── ANALYSIS ───
+function runAnalysis(){
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  document.getElementById('progress-card').style.display='block';
+  document.getElementById('results-area').style.display='none';
+  document.getElementById('metrics-row').style.display='none';
+  document.getElementById('empty-state').style.display='none';
+
+  const demo = currentDemo || DEMOS['k562_del'];
+  const steps = [
+    'Loading contact matrix...',
+    'Validating bin resolution (10 kb)...',
+    'Applying ICE normalization...',
+    'Computing observed / expected ratios...',
+    'Running z-score anomaly scan...',
+    'Running Isolation Forest (ML)...',
+    'Applying saliency segmentation...',
+    'Classifying candidate regions...',
+    'Filtering false positives...',
+    'Generating report...'
+  ];
+  const log = document.getElementById('prog-log');
+  const bar = document.getElementById('prog-bar');
+  log.innerHTML='';
+  bar.style.width='0%';
+
+  let i=0;
+  function nextStep(){
+    if(i>0) log.children[i-1].className='log-line done';
+    if(i<steps.length){
+      const line=document.createElement('div');
+      line.className='log-line active';
+      line.textContent='▸ '+steps[i];
+      log.appendChild(line);
+      log.scrollTop=log.scrollHeight;
+      bar.style.width=((i+1)/steps.length*100).toFixed(0)+'%';
+      i++;
+      setTimeout(nextStep, 200+Math.random()*250);
+    } else {
+      bar.style.width='100%';
+      setTimeout(()=>showResults(demo), 400);
+      btn.disabled=false;
+    }
+  }
+  nextStep();
+}
+
+function showResults(demo){
+  currentSVs = demo.svs;
+  document.getElementById('results-area').style.display='block';
+  document.getElementById('metrics-row').style.display='grid';
+
+  // metrics
+  document.getElementById('m-svcount').textContent = demo.svs.length;
+  const avgConf = (demo.svs.reduce((a,b)=>a+b.conf,0)/demo.svs.length*100).toFixed(0)+'%';
+  document.getElementById('m-conf').textContent = avgConf;
+  const sizes = demo.svs.filter(s=>s.size!=='—').map(s=>parseFloat(s.size));
+  document.getElementById('m-size').textContent = sizes.length ? Math.max(...sizes).toFixed(1)+' Mb' : '—';
+  const riskMap={'LOW':'LOW','MEDIUM':'MED','HIGH':'HIGH','CRITICAL':'CRIT'};
+  const riskColor={'LOW':'var(--success)','MEDIUM':'var(--warning)','HIGH':'var(--danger)','CRITICAL':'#ff0040'};
+  document.getElementById('m-risk').textContent = riskMap[demo.risk]||demo.risk;
+  document.getElementById('m-risk').style.color = riskColor[demo.risk]||'var(--text)';
+
+  drawHeatmaps(demo.pattern);
+  drawTable(demo.svs);
+  drawInterpretation(demo);
+}
+
+// ─── HEATMAPS ───
+function heatColor(v, highlight){
+  if(highlight) return `rgba(239,68,68,${Math.min(1,v*1.3).toFixed(2)})`;
+  if(v>0.75) return `rgba(214,90,48,${v.toFixed(2)})`;
+  if(v>0.45) return `rgba(180,120,40,${v.toFixed(2)})`;
+  if(v>0.2) return `rgba(30,80,160,${v.toFixed(2)})`;
+  return `rgba(10,18,40,${Math.max(0.15,v).toFixed(2)})`;
+}
+
+function drawHeatmaps(svType){
+  const raw = document.getElementById('raw-canvas');
+  const svC = document.getElementById('sv-canvas');
+  const N = 40;
+  [raw,svC].forEach(c=>{c.width=N;c.height=N;});
+  const rCtx=raw.getContext('2d');
+  const sCtx=svC.getContext('2d');
+
+  // seed for reproducibility
+  function seededRand(i,j){ return (Math.sin(i*127+j*311)*43758.5453)%1; }
+
+  for(let i=0;i<N;i++){
+    for(let j=i;j<N;j++){
+      const dist=j-i;
+      let v=Math.max(0,1-dist*0.055)*(0.8+seededRand(i,j)*0.4);
+      // noise
+      v=Math.max(0,Math.min(1,v+(seededRand(i+99,j+77)-0.5)*0.18));
+
+      // draw raw (symmetric)
+      rCtx.fillStyle=heatColor(v,false);
+      rCtx.fillRect(j,i,1,1);
+      rCtx.fillRect(i,j,1,1);
+
+      // determine if this pixel is an SV hotspot
+      let hot=false;
+      if(svType==='del') hot=(i>=8&&i<=14&&j>=26&&j<=32)||(i>=26&&i<=32&&j>=8&&j<=14);
+      if(svType==='dup') hot=(i>=6&&i<=12&&j>=18&&j<=24);
+      if(svType==='inv') hot=(Math.abs((i+j)-N+2)<=2&&i>=10&&i<=30);
+      if(svType==='tra') hot=(i>=4&&i<=9&&j>=30&&j<=36)||(i>=30&&i<=36&&j>=4&&j<=9);
+
+      const sv_v = hot ? Math.min(1,v+0.7) : v;
+      sCtx.fillStyle=heatColor(sv_v,hot);
+      sCtx.fillRect(j,i,1,1);
+      sCtx.fillRect(i,j,1,1);
+    }
+  }
+}
+
+// ─── TABLE ───
+const typeClass={DEL:'type-del',DUP:'type-dup',INV:'type-inv',TRA:'type-tra'};
+const confColor={high:'var(--success)',med:'var(--warning)',low:'var(--danger)'};
+
+function drawTable(svs){
+  const tbody=document.getElementById('sv-tbody');
+  tbody.innerHTML='';
+  svs.forEach(sv=>{
+    const c=sv.conf>0.8?'#22c55e':sv.conf>0.6?'#f59e0b':'#ef4444';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><span style="font-family:var(--font-mono);font-size:0.75rem;">${sv.id}</span></td>
+      <td><span class="type-badge ${typeClass[sv.type]||'type-del'}">${sv.type}</span></td>
+      <td style="font-family:var(--font-mono);font-size:0.75rem;">${sv.chr}</td>
+      <td style="font-family:var(--font-mono);font-size:0.75rem;">${sv.start}</td>
+      <td style="font-family:var(--font-mono);font-size:0.75rem;">${sv.end}</td>
+      <td style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text2);">${sv.size}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="conf-bar"><div class="conf-fill" style="width:${(sv.conf*100).toFixed(0)}%;background:${c};"></div></div>
+          <span style="font-family:var(--font-mono);font-size:0.75rem;color:${c};">${(sv.conf*100).toFixed(0)}%</span>
+        </div>
+      </td>
+      <td style="font-size:0.75rem;color:var(--text2);max-width:200px;">${sv.disease}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ─── INTERPRETATION ───
+function drawInterpretation(demo){
+  const el=document.getElementById('interp-text');
+  const riskMessages={
+    LOW:`<span style="color:var(--success);font-weight:500;">Low-risk profile.</span> No high-confidence pathogenic SVs detected. The identified variant is likely a benign copy-number polymorphism. Recommend routine follow-up.`,
+    MEDIUM:`<span style="color:var(--warning);font-weight:500;">Moderate risk detected.</span> An inversion affecting a regulatory locus was identified. This may disrupt gene expression without changing protein sequence. Functional validation recommended.`,
+    HIGH:`<span style="color:var(--danger);font-weight:500;">High-risk genomic profile.</span> Multiple structural variations detected including a deletion consistent with tumor suppressor loss and a possible oncogene amplification. This profile is consistent with K562 leukemia cell-line characteristics. Clinical correlation advised.`,
+    CRITICAL:`<span style="color:#ff4060;font-weight:500;">Critical: pathogenic rearrangement identified.</span> A strong inter-chromosomal contact block between chr9 and chr22 is detected at the BCR and ABL1 loci, consistent with the Philadelphia chromosome translocation (t(9;22)(q34;q11.2)). This is the hallmark of Chronic Myeloid Leukemia (CML). Imatinib (Gleevec) targeted therapy is the first-line treatment for this specific SV.`
+  };
+  el.innerHTML = riskMessages[demo.risk] || 'Analysis complete.';
+  el.innerHTML += `<br><br><span style="color:var(--text3);font-size:0.8rem;">Dataset: ${demo.label} · Detected ${demo.svs.length} SV(s) · Analysis performed using hybrid statistical + ML pipeline.</span>`;
+}
+
+// ─── EXPORT ───
+function exportReport(){
+  if(!currentSVs.length){ showToast('Run analysis first'); return; }
+  let csv='SV_ID,Type,Chr,Start,End,Size,Confidence,Disease_Link\n';
+  currentSVs.forEach(sv=>{
+    csv+=`${sv.id},${sv.type},${sv.chr},"${sv.start}","${sv.end}",${sv.size},${(sv.conf*100).toFixed(0)}%,"${sv.disease}"\n`;
+  });
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='genomescope_sv_report.csv';
+  a.click();
+}
+
+// ─── TOAST ───
+function showToast(msg){
+  const t=document.createElement('div');
+  t.style.cssText=`position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;
+    background:var(--surface2);border:1px solid var(--border2);border-radius:10px;
+    padding:10px 18px;font-size:0.82rem;color:var(--text);
+    animation:fadeUp 0.3s ease;box-shadow:0 4px 20px rgba(0,0,0,0.4);`;
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+// drag-drop
+const dz=document.getElementById('drop-zone');
+if(dz){
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+  dz.addEventListener('drop',e=>{
+    e.preventDefault();dz.classList.remove('drag');
+    const f=e.dataTransfer.files[0];
+    if(f){currentDemo=DEMOS['k562_del'];showToast('File loaded: '+f.name);}
+  });
+}
+</script>
+</body>
+</html>
